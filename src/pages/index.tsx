@@ -1,60 +1,170 @@
 import React from 'react'
 import Head from 'next/head'
+import * as V from 'victory'
+import dayjs from 'dayjs'
+import numeral from 'numeral'
 
-import styles from '../styles/Home.module.css'
+import styled from 'styled-components'
+import { useCases } from 'src/useCases'
+import { UkGovCovidApiDataPoint, UkGovCovidApiResponse } from 'src/ukGovCovidData'
+import { GetStaticProps } from 'next'
+import { getCases } from './api/cases'
 
-export default function Home() {
+const Container = styled.div`
+  min-height: 100vh;
+  padding: 0 0.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+`
+
+const Main = styled.main`
+  padding: 5rem 0;
+  width: 80vw;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+`
+
+const Footer = styled.footer`
+  width: 100%;
+  height: 100px;
+  border-top: 1px solid #eaeaea;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  img {
+    margin-left: 0.5rem;
+  }
+  a {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+`
+
+const Logo = styled.img`
+  height: 1em;
+`
+
+const Title = styled.h1`
+  margin: 0;
+  line-height: 1.15;
+  font-size: 4rem;
+  text-align: center;
+
+  a {
+    color: #0070f3;
+    text-decoration: none;
+  }
+
+  a:hover,
+  a:focus,
+  a:active {
+    text-decoration: underline;
+  }
+`
+
+const getPercentage = (d: UkGovCovidApiDataPoint): number => {
+  if (!d?.newCases || !d?.newPCRTestsByPublishDate) return 0
+  return (d.newCases / d.newPCRTestsByPublishDate) * 100
+}
+
+type Props = {
+  cases: UkGovCovidApiResponse
+}
+
+export const getStaticProps: GetStaticProps<Props> = async () => {
+  const cases = await getCases()
+  return {
+    props: { cases },
+  }
+}
+
+function Home(props: Props): JSX.Element {
+  const { cases } = useCases(props.cases)
+
+  const data = (
+    cases?.data.map((d) => ({
+      date: d.date,
+      newPCRTestsByPublishDate: d.newPCRTestsByPublishDate,
+      newCases: d.newCases,
+      // newCasesPerTests: (d.newPCRTestsByPublishDate ?? 0) / (d.newCases ?? 0),
+      newCasesPerTestsPercentage: getPercentage(d),
+      // newCasesPerTests: (d.newCases ?? 0) / (d.newTestsByPublishDate ?? 0),
+    })) ?? []
+  )
+    .filter((d) => dayjs(d.date).isAfter(dayjs('2020-07-01')))
+    .sort((d1, d2) => {
+      return dayjs(d1.date).isBefore(d2.date) ? 1 : -1
+    })
+  console.log('data', data)
+  // const foo = data.map(d => )
   return (
-    <div className={styles.container}>
+    <Container>
       <Head>
         <title>Create Next App</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
+      <Main>
+        <Title>
+          <span role="img" aria-label="UK flag">
+            🇬🇧
+          </span>{' '}
+          Covid cases in the UK{' '}
+          <span role="img" aria-label="UK flag">
+            🇬🇧
+          </span>
+        </Title>
+        <V.VictoryChart theme={V.VictoryTheme.grayscale} width={800} height={500}>
+          <V.VictoryBar
+            data={data}
+            x="date"
+            y="newCasesPerTestsPercentage"
+            sortKey="x"
+            sortOrder="descending"
+            range={{ y: [0, 100] }}
+          />
+          <V.VictoryAxis
+            dependentAxis
+            scale="linear"
+            label="Positive cases out of tests taken per day"
+            tickFormat={(t) => `${numeral(t).format('0')}%`}
+            // tickFormat={(t) => `${numeral(t).format('0[.]0 a')}`}
+            tickLabelComponent={<V.VictoryLabel angle={0} style={{ fontSize: '9px' }} />}
+            // tickCount={20}
+            // tickFormat={(t) => `${dayjs(t).format('DD/MM')}`}
+            // tickLabelComponent={<V.VictoryLabel angle={-45} style={{ fontSize: '9px' }} />}
+            tickValues={[0, 20, 40, 60, 80, 100]}
+            // tickValues={data.filter((d, index) => index % 100 === 0)}
+          />
+          <V.VictoryAxis
+            scale="time"
+            label="Time"
+            tickCount={20}
+            tickFormat={(t) => `${dayjs(t).format('DD/MM')}`}
+            tickLabelComponent={<V.VictoryLabel angle={-45} style={{ fontSize: '9px' }} />}
+            // tickValues={data.filter((d, index) => index % 100 === 0)}
+          />
+        </V.VictoryChart>
+      </Main>
 
-        <p className={styles.description}>
-          Get started by editing <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a href="https://github.com/vercel/next.js/tree/master/examples" className={styles.card}>
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>Instantly deploy your Next.js site to a public URL with Vercel.</p>
-          </a>
-        </div>
-      </main>
-
-      <footer className={styles.footer}>
+      <Footer>
         <a
           href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
           target="_blank"
           rel="noopener noreferrer"
         >
-          Powered by <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
+          Powered by <Logo src="/vercel.svg" alt="Vercel Logo" />
         </a>
-      </footer>
-    </div>
+      </Footer>
+    </Container>
   )
 }
+
+export default Home
