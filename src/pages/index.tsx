@@ -97,12 +97,23 @@ function Home(props: Props): JSX.Element {
       newCasesPerTestsPercentage: getPercentage(d),
       // newCasesPerTests: (d.newCases ?? 0) / (d.newTestsByPublishDate ?? 0),
     })) ?? []
-  )
-    .filter((d) => dayjs(d.date).isAfter(dayjs('2020-07-01')))
-    .sort((d1, d2) => {
-      return dayjs(d1.date).isBefore(d2.date) ? 1 : -1
-    })
+  ).filter((d) => dayjs(d.date).isAfter(dayjs('2020-04-21')))
+  // .sort((d1, d2) => {
+  //   return dayjs(d1.date).isBefore(d2.date) ? 1 : -1
+  // })
   console.log('data', data)
+
+  // const averages = data.filter((d, i) => i % 7 === 0)
+  // const averages = []
+  // let numOfDays = 0
+  // let index = 0
+  // data.forEach(({date, newCasesPerTestsPercentage}, index) => {
+  //   if (numOfDays === 7) {
+  //     numOfDays = 0
+  //   } else {
+  //     numOfDays += 1
+  //   }
+  // });
   // const foo = data.map(d => )
   return (
     <Container>
@@ -128,7 +139,7 @@ function Home(props: Props): JSX.Element {
             y="newCasesPerTestsPercentage"
             sortKey="x"
             sortOrder="descending"
-            range={{ y: [0, 100] }}
+            // range={{ y: [0, 100] }}
           />
           <V.VictoryAxis
             dependentAxis
@@ -140,7 +151,7 @@ function Home(props: Props): JSX.Element {
             // tickCount={20}
             // tickFormat={(t) => `${dayjs(t).format('DD/MM')}`}
             // tickLabelComponent={<V.VictoryLabel angle={-45} style={{ fontSize: '9px' }} />}
-            tickValues={[0, 20, 40, 60, 80, 100]}
+            // tickValues={[0, 20, 40, 60, 80, 100]}
             // tickValues={data.filter((d, index) => index % 100 === 0)}
           />
           <V.VictoryAxis
